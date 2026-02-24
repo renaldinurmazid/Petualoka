@@ -10,7 +10,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as productIndex } from '@/routes/product';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
@@ -20,6 +19,7 @@ import {
     LayoutGrid,
     ShoppingBag,
     Tag,
+    Wallet,
 } from 'lucide-react';
 import AppLogo from './app-logo';
 
@@ -31,23 +31,28 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Produk',
-        href: productIndex(),
+        href: '/products',
         icon: Box,
     },
     {
         title: 'Voucher',
-        href: '/voucher',
+        href: '/vouchers',
         icon: Tag,
     },
     {
         title: 'Order',
-        href: '/order',
+        href: '/orders',
         icon: ShoppingBag,
     },
     {
         title: 'Laporan',
-        href: '/laporan',
+        href: '/reports',
         icon: ChartArea,
+    },
+    {
+        title: 'Dompet',
+        href: '/wallets',
+        icon: Wallet,
     },
     {
         title: 'Profile Toko',

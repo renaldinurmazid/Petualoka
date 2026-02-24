@@ -16,3 +16,21 @@ export function isSameUrl(
 export function resolveUrl(url: NonNullable<InertiaLinkProps['href']>): string {
     return typeof url === 'string' ? url : url.url;
 }
+
+export function formatCurrency(amount: string | number) {
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+    }).format(typeof amount === 'string' ? parseFloat(amount) || 0 : amount);
+}
+
+export function formatNumber(amount: string | number) {
+    return new Intl.NumberFormat('id-ID', {
+        minimumFractionDigits: 0,
+    }).format(typeof amount === 'string' ? parseFloat(amount) || 0 : amount);
+}
+
+export function parseNumber(value: string) {
+    return value.replace(/[^\d]/g, '');
+}

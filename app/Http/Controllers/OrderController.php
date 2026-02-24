@@ -17,6 +17,7 @@ class OrderController extends Controller
         $user = auth()->user();
         $vendorId = $user->vendorProfile->id;
         $search = $request->input('search');
+        $perPage = $request->input('per_page', 10);
 
         $orders = Order::whereHas('items', function ($query) use ($vendorId) {
             $query->where('vendor_id', $vendorId);
@@ -36,13 +37,14 @@ class OrderController extends Controller
                 }
             ])
             ->latest()
-            ->paginate(10)
+            ->paginate($perPage)
             ->withQueryString();
 
         return Inertia::render('order/index', [
             'orders' => $orders,
             'filters' => [
                 'search' => $search,
+                'per_page' => $perPage,
             ],
         ]);
     }
@@ -154,6 +156,6 @@ class OrderController extends Controller
 
         $order->delete();
 
-        return redirect()->route('order.index')->with('success', 'Order deleted successfully');
+        return redirect()->route('orders.index')->with('success', 'Order deleted successfully');
     }
 }

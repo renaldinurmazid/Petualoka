@@ -17,6 +17,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Loader2, Plus, Trash2, UploadCloud, X } from 'lucide-react';
+import { formatNumber, parseNumber } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -405,10 +406,10 @@ export default function ProductEdit({ product }: { product: ProductProp }) {
                                 <Label htmlFor="price">Harga Dasar (Rp)</Label>
                                 <Input
                                     id="price"
-                                    type="number"
-                                    value={data.price}
+                                    type="text"
+                                    value={formatNumber(data.price)}
                                     onChange={(e) =>
-                                        setData('price', e.target.value)
+                                        setData('price', parseNumber(e.target.value))
                                     }
                                     className="h-11"
                                     required
@@ -604,13 +605,13 @@ export default function ProductEdit({ product }: { product: ProductProp }) {
                                             </TableCell>
                                             <TableCell>
                                                 <Input
-                                                    type="number"
-                                                    value={variant.price}
+                                                    type="text"
+                                                    value={formatNumber(variant.price)}
                                                     onChange={(e) =>
                                                         updateVariant(
                                                             index,
                                                             'price',
-                                                            e.target.value,
+                                                            parseNumber(e.target.value),
                                                         )
                                                     }
                                                     className="h-8 text-xs"

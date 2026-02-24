@@ -57,7 +57,7 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/',
     },
     {
-        title: 'Vendor Profile',
+        title: 'Profil Toko',
         href: '/vendor-profile',
     },
 ];
@@ -116,7 +116,7 @@ export default function VendorProfile({ vendor }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Vendor Profile" />
+            <Head title="Profil Toko" />
 
             <div className="flex flex-col gap-6 p-4 py-6 md:p-8">
                 <div className="mx-auto w-full max-w-5xl space-y-6">

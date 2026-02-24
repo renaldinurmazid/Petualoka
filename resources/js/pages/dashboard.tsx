@@ -282,7 +282,6 @@ export default function Dashboard() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-            <div className="min-h-screen space-y-8 bg-neutral-50/50 p-6 md:p-10 dark:bg-black">
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                     {/* Left 6 Cards */}
                     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:col-span-2 lg:grid-cols-3">
@@ -341,10 +340,7 @@ export default function Dashboard() {
                         <ClientGrowthCard />
                     </div>
                 </div>
-
-                {/* Bottom Main Stat */}
-                <StatisticCard />
-            </div>
+                {/* <StatisticCard /> */}
         </AppLayout>
     );
 }

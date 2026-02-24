@@ -41,6 +41,7 @@ class ProductController extends Controller
 
         return Inertia::render('product/product-index', [
             'products' => $products,
+            'filters' => $request->only(['search', 'per_page']),
         ]);
     }
 
@@ -130,7 +131,6 @@ class ProductController extends Controller
 
             DB::commit();
             return Redirect::route('product.index')->with('success', 'Produk berhasil ditambahkan.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error adding product: ' . $e->getMessage());
@@ -251,7 +251,6 @@ class ProductController extends Controller
 
             DB::commit();
             return Redirect::route('product.index')->with('success', 'Produk berhasil diperbarui.');
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error updating product: ' . $e->getMessage());

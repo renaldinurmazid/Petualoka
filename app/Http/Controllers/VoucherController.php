@@ -20,10 +20,22 @@ class VoucherController extends Controller
             return redirect()->route('dashboard')->with('error', 'Anda harus memiliki profil vendor untuk mengelola voucher.');
         }
 
-        $vouchers = Voucher::where('vendor_id', $vendor->id)
-            ->latest()
-            ->get()
-            ->map(function ($voucher) {
+        $search = $request->input('search');
+        $perPage = $request->input('per_page', 10);
+
+        $query = Voucher::where('vendor_id', $vendor->id);
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
+        $vouchers = $query->latest()
+            ->paginate($perPage)
+            ->withQueryString()
+            ->through(function ($voucher) {
                 $data = $voucher->toArray();
                 $data['start_date'] = $voucher->start_date ? $voucher->start_date->format('Y-m-d') : null;
                 $data['end_date'] = $voucher->end_date ? $voucher->end_date->format('Y-m-d') : null;
@@ -31,7 +43,8 @@ class VoucherController extends Controller
             });
 
         return Inertia::render('voucher/index', [
-            'vouchers' => $vouchers
+            'vouchers' => $vouchers,
+            'filters' => $request->only(['search', 'per_page'])
         ]);
     }
 

@@ -11,7 +11,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { index as indexOrder } from '@/routes/order';
+import { index as indexOrder } from '@/routes/orders';
 import { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
@@ -83,7 +83,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
     {
         title: 'Order',
-        href: '/order',
+        href: '/orders',
     },
     {
         title: 'Detail Order',

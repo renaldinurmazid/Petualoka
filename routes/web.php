@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VendorProfileController;
 use App\Http\Controllers\VoucherController;
+use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -50,10 +52,12 @@ Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
     Route::get('products/{product}/edit', [\App\Http\Controllers\ProductController::class, 'edit'])->name('product.edit');
     Route::put('products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('product.update');
 
-    Route::resource('voucher', VoucherController::class);
-    Route::resource('order', OrderController::class);
+    Route::resource('vouchers', VoucherController::class);
+    Route::resource('orders', OrderController::class);
     Route::patch('order/{order}/status', [OrderController::class, 'updateStatus'])->name('order.update-status');
 
+    Route::get('reports', [ReportController::class, 'index'])->name('report.index');
+    Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
 });
 
 require __DIR__ . '/settings.php';

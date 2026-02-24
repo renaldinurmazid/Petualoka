@@ -17,6 +17,7 @@ import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
 import { Loader2, Plus, Trash2, UploadCloud, X } from 'lucide-react';
+import { formatNumber, parseNumber } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -216,7 +217,7 @@ export default function ProductCreate() {
                     {/* Basic Info & Images */}
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                            <div className="col-span-1 space-y-4 md:col-span-2">
+                            <div className="col-span-1 md:col-span-2 flex flex-col gap-2">
                                 <Label className="text-base font-semibold">
                                     Foto Produk Utama
                                 </Label>
@@ -264,7 +265,7 @@ export default function ProductCreate() {
                                 <InputError message={errors.images} />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label htmlFor="name">Nama Produk</Label>
                                 <Input
                                     id="name"
@@ -279,7 +280,7 @@ export default function ProductCreate() {
                                 <InputError message={errors.name} />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label htmlFor="slug">Slug</Label>
                                 <Input
                                     id="slug"
@@ -290,14 +291,14 @@ export default function ProductCreate() {
                                 <InputError message={errors.slug} />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label htmlFor="price">Harga Dasar (Rp)</Label>
                                 <Input
                                     id="price"
-                                    type="number"
-                                    value={data.price}
+                                    type="text"
+                                    value={formatNumber(data.price)}
                                     onChange={(e) =>
-                                        setData('price', e.target.value)
+                                        setData('price', parseNumber(e.target.value))
                                     }
                                     placeholder="0"
                                     className="h-11"
@@ -306,7 +307,7 @@ export default function ProductCreate() {
                                 <InputError message={errors.price} />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="flex flex-col gap-2">
                                 <Label htmlFor="stock">Total Stok</Label>
                                 <Input
                                     id="stock"
@@ -329,7 +330,7 @@ export default function ProductCreate() {
                                 )}
                             </div>
 
-                            <div className="col-span-1 space-y-2 md:col-span-2">
+                            <div className="col-span-1 flex flex-col gap-2 md:col-span-2">
                                 <Label htmlFor="description">Deskripsi</Label>
                                 <Textarea
                                     id="description"
@@ -499,13 +500,13 @@ export default function ProductCreate() {
                                             </TableCell>
                                             <TableCell>
                                                 <Input
-                                                    type="number"
-                                                    value={variant.price}
+                                                    type="text"
+                                                    value={formatNumber(variant.price)}
                                                     onChange={(e) =>
                                                         updateVariant(
                                                             index,
                                                             'price',
-                                                            e.target.value,
+                                                            parseNumber(e.target.value),
                                                         )
                                                     }
                                                     className="h-8 text-xs"
