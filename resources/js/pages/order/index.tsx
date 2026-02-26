@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { DeleteConfirmation } from '@/components/delete-confirmation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { formatCurrency } from '@/lib/utils';
 import {
     destroy as destroyOrder,
     edit as editOrder,
@@ -37,8 +38,6 @@ import { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Eye, Pencil, Search, Trash } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { formatCurrency } from '@/lib/utils';
-import { DeleteConfirmation } from '@/components/delete-confirmation';
 import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -69,7 +68,14 @@ interface Order {
         email: string;
     };
     grand_total: number;
-    status: 'pending' | 'paid' | 'processing' | 'shipped' | 'completed' | 'cancelled' | 'expired';
+    status:
+        | 'pending'
+        | 'paid'
+        | 'processing'
+        | 'shipped'
+        | 'completed'
+        | 'cancelled'
+        | 'expired';
     created_at: string;
     items: OrderItem[];
 }
@@ -103,7 +109,11 @@ const getStatusBadge = (status: string) => {
         case 'shipped':
             return (
                 <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                    {status === 'paid' ? 'Dibayar' : status === 'processing' ? 'Diproses' : 'Dikirim'}
+                    {status === 'paid'
+                        ? 'Dibayar'
+                        : status === 'processing'
+                          ? 'Diproses'
+                          : 'Dikirim'}
                 </span>
             );
         case 'pending':
@@ -167,7 +177,7 @@ export default function OrderIndex({
         router.delete(destroyOrder({ order: id }).url, {
             onSuccess: () => {
                 toast.success('Order berhasil dihapus');
-            }
+            },
         });
     };
 
@@ -177,7 +187,9 @@ export default function OrderIndex({
             <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Order</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            Order
+                        </h1>
                         <p className="text-muted-foreground">
                             Kelola dan pantau pesanan dari pelanggan Anda.
                         </p>
@@ -185,8 +197,8 @@ export default function OrderIndex({
                 </div>
 
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <div className="relative max-w-sm flex-1">
+                        <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                         <Input
                             placeholder="Cari order number atau customer..."
                             className="pl-9"
@@ -194,16 +206,18 @@ export default function OrderIndex({
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">Tampilkan:</span>
+                        <span className="text-sm whitespace-nowrap text-muted-foreground">
+                            Tampilkan:
+                        </span>
                         <Select
-                            value={filters.per_page?.toString() || "10"}
+                            value={filters.per_page?.toString() || '10'}
                             onValueChange={(value) =>
                                 router.get(
                                     indexOrder().url,
                                     { per_page: value, search: filters.search },
-                                    { preserveState: true }
+                                    { preserveState: true },
                                 )
                             }
                         >
@@ -224,12 +238,16 @@ export default function OrderIndex({
                         <Table>
                             <TableHeader className="bg-muted/50">
                                 <TableRow>
-                                    <TableHead className="pl-6">Order Number</TableHead>
+                                    <TableHead className="pl-6">
+                                        Order Number
+                                    </TableHead>
                                     <TableHead>Tanggal</TableHead>
                                     <TableHead>Pelanggan</TableHead>
                                     <TableHead>Total</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="pr-6 text-right">Aksi</TableHead>
+                                    <TableHead className="pr-6 text-right">
+                                        Aksi
+                                    </TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -244,7 +262,10 @@ export default function OrderIndex({
                                     </TableRow>
                                 ) : (
                                     orders.data.map((order) => (
-                                        <TableRow key={order.id} className="group transition-colors hover:bg-muted/30">
+                                        <TableRow
+                                            key={order.id}
+                                            className="group transition-colors hover:bg-muted/30"
+                                        >
                                             <TableCell className="pl-6 font-medium text-primary">
                                                 {order.order_number}
                                             </TableCell>
@@ -262,7 +283,9 @@ export default function OrderIndex({
                                                 </div>
                                             </TableCell>
                                             <TableCell className="font-semibold text-primary">
-                                                {formatCurrency(Number(order.grand_total))}
+                                                {formatCurrency(
+                                                    Number(order.grand_total),
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {getStatusBadge(order.status)}
@@ -272,9 +295,13 @@ export default function OrderIndex({
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                        className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                                         onClick={() =>
-                                                            router.get(showOrder({ order: order.id }).url)
+                                                            router.get(
+                                                                showOrder({
+                                                                    order: order.id,
+                                                                }).url,
+                                                            )
                                                         }
                                                         title="Detail Pesanan"
                                                     >
@@ -283,23 +310,31 @@ export default function OrderIndex({
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                                        className="h-8 w-8 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                                                         onClick={() =>
-                                                            router.get(editOrder({ order: order.id }).url)
+                                                            router.get(
+                                                                editOrder({
+                                                                    order: order.id,
+                                                                }).url,
+                                                            )
                                                         }
                                                         title="Edit Pesanan"
                                                     >
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
                                                     <DeleteConfirmation
-                                                        onConfirm={() => handleDelete(order.id)}
+                                                        onConfirm={() =>
+                                                            handleDelete(
+                                                                order.id,
+                                                            )
+                                                        }
                                                         title="Hapus Order?"
                                                         description={`Anda yakin ingin menghapus order "${order.order_number}"? Tindakan ini tidak dapat dibatalkan.`}
                                                     >
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                                            className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                                                             title="Hapus Pesanan"
                                                         >
                                                             <Trash className="h-4 w-4" />
@@ -318,34 +353,44 @@ export default function OrderIndex({
                 {orders.last_page > 1 && (
                     <div className="flex items-center justify-between px-2">
                         <p className="text-sm text-muted-foreground">
-                            Showing {orders.from} to {orders.to} of {orders.total} orders
+                            Showing {orders.from} to {orders.to} of{' '}
+                            {orders.total} orders
                         </p>
                         <Pagination className="mx-0 w-auto">
                             <PaginationContent>
                                 {orders.links.map((link, i) => {
-                                    const isPrevious = link.label.includes('Previous');
+                                    const isPrevious =
+                                        link.label.includes('Previous');
                                     const isNext = link.label.includes('Next');
                                     const isEllipsis = link.label === '...';
-                                    
+
                                     return (
                                         <PaginationItem key={i}>
                                             {isPrevious ? (
-                                                <PaginationPrevious 
-                                                    href={link.url || '#'} 
-                                                    className={!link.url ? 'pointer-events-none opacity-50' : ''}
+                                                <PaginationPrevious
+                                                    href={link.url || '#'}
+                                                    className={
+                                                        !link.url
+                                                            ? 'pointer-events-none opacity-50'
+                                                            : ''
+                                                    }
                                                     title=""
                                                 />
                                             ) : isNext ? (
-                                                <PaginationNext 
-                                                    href={link.url || '#'} 
-                                                    className={!link.url ? 'pointer-events-none opacity-50' : ''}
+                                                <PaginationNext
+                                                    href={link.url || '#'}
+                                                    className={
+                                                        !link.url
+                                                            ? 'pointer-events-none opacity-50'
+                                                            : ''
+                                                    }
                                                     title=""
                                                 />
                                             ) : isEllipsis ? (
                                                 <PaginationEllipsis />
                                             ) : (
-                                                <PaginationLink 
-                                                    href={link.url || '#'} 
+                                                <PaginationLink
+                                                    href={link.url || '#'}
                                                     isActive={link.active}
                                                 >
                                                     {link.label}

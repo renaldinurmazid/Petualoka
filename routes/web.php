@@ -56,8 +56,8 @@ Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
     Route::resource('vouchers', VoucherController::class);
     Route::resource('orders', OrderController::class);
     Route::patch('order/{order}/status', [OrderController::class, 'updateStatus'])->name('order.update-status');
-
     Route::get('reports', [ReportController::class, 'index'])->name('report.index');
+    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
     Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
 });
 
