@@ -39,6 +39,7 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
             ]);
 
+            $user->assignRole('customers');
             $this->sendOtp($user->email, 'registration');
 
             DB::commit();
@@ -85,10 +86,10 @@ class AuthController extends Controller
                 ], 403);
             }
 
-            // Generate token if Sanctum is installed
-            $token = method_exists($user, 'createToken')
-                ? $user->createToken('auth_token')->plainTextToken
-                : 'session_based_or_manual_token';
+            if ($user->profile_picture == null) {
+                $user->profile_picture = 'https://ui-avatars.com/api/?name=' . $user->name;
+            }
+            $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 'status' => 'success',
@@ -165,13 +166,11 @@ class AuthController extends Controller
         }
     }
 
-    public function verifyOtp(Request $request)
+    public function verifyEmail(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'otp' => 'required|string',
-            'type' => 'required|in:registration,forgot_password',
-            'password' => 'required_if:type,forgot_password|string|min:8|confirmed',
         ]);
 
         if ($validator->fails()) {
@@ -182,7 +181,7 @@ class AuthController extends Controller
         try {
             $otpRecord = Otp::where('email', $request->email)
                 ->where('otp', $request->otp)
-                ->where('type', $request->type)
+                ->where('type', 'registration')
                 ->where('expires_at', '>', Carbon::now())
                 ->lockForUpdate()
                 ->first();
@@ -195,15 +194,9 @@ class AuthController extends Controller
             }
 
             $user = User::where('email', $request->email)->first();
-
-            if ($request->type === 'registration') {
+            if ($user) {
                 $user->email_verified_at = Carbon::now();
                 $user->save();
-                $message = 'Email verified successfully. You can now login.';
-            } else {
-                $user->password = Hash::make($request->password);
-                $user->save();
-                $message = 'Password reset successfully.';
             }
 
             $otpRecord->delete();
@@ -211,7 +204,58 @@ class AuthController extends Controller
             DB::commit();
             return response()->json([
                 'status' => 'success',
-                'message' => $message
+                'message' => 'Email verified successfully. You can now login.'
+            ]);
+        } catch (Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Verification failed.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'otp' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            $otpRecord = Otp::where('email', $request->email)
+                ->where('otp', $request->otp)
+                ->where('type', 'forgot_password')
+                ->where('expires_at', '>', Carbon::now())
+                ->lockForUpdate()
+                ->first();
+
+            if (!$otpRecord) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid or expired OTP'
+                ], 422);
+            }
+
+            $user = User::where('email', $request->email)->first();
+            if ($user) {
+                $user->password = Hash::make($request->password);
+                $user->save();
+            }
+
+            $otpRecord->delete();
+
+            DB::commit();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Password reset successfully.'
             ]);
         } catch (Exception $e) {
             DB::rollBack();
@@ -238,5 +282,43 @@ class AuthController extends Controller
         ]);
 
         Mail::to($email)->send(new OtpMail($otpCode));
+    }
+
+    public function profile(Request $request)
+    {
+        try {
+            $user = User::where('id', $request->user()->id)->first();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile retrieved successfully',
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'profile_picture' => $user->profile_picture == null ? 'https://ui-avatars.com/api/?name=' . $user->name : $user->profile_picture,
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to retrieve profile.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function logout(Request $request)
+    {
+        try {
+            $request->user()->currentAccessToken()->delete();
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Logout successful'
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to logout.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

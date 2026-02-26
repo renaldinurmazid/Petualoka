@@ -39,6 +39,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'profile_picture',
         'password',
     ];
 
@@ -63,6 +64,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function getProfilePictureAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
     }
     public function vendorProfile()
     {

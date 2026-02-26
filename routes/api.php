@@ -12,6 +12,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/carts/count', [\App\Http\Controllers\Api\CartController::class, 'count']);
@@ -25,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/checkout', [\App\Http\Controllers\Api\OrderController::class, 'checkout']);
     Route::get('/orders/{order_number}/status', [\App\Http\Controllers\Api\OrderController::class, 'getStatus']);
     Route::get('/orders/{id}', [\App\Http\Controllers\Api\OrderController::class, 'show']);
+    
+    Route::get('/profile', [AuthController::class, 'profile']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 });
 
 Route::get('/banners', [BannerController::class, 'index']);
