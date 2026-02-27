@@ -61,4 +61,17 @@ Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
     Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
 });
 
+Route::get('test-connect', function () {
+    try {
+        Mail::raw('Halo, ini adalah pesan test koneksi dari Laravel!', function ($message) {
+            $message->to('renaldinurmazid@gmail.com')
+                    ->subject('Test Koneksi SMTP');
+        });
+        
+        return "✅ Koneksi Berhasil! Email telah dikirim.";
+    } catch (\Exception $e) {
+        return "❌ Koneksi Gagal! Pesan Error: " . $e->getMessage();
+    }
+});
+
 require __DIR__ . '/settings.php';
