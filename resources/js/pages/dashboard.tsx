@@ -282,65 +282,65 @@ export default function Dashboard() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                    {/* Left 6 Cards */}
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:col-span-2 lg:grid-cols-3">
-                        <StatCard
-                            title="Total Income"
-                            amount="$72,428"
-                            change="10%"
-                            changeAmount="+$142"
-                            color="#3b82f6"
-                            chartData={[40, 60, 30, 80, 50, 90, 70]}
-                        />
-                        <StatCard
-                            title="Total Sale"
-                            amount="24,210"
-                            change="10%"
-                            changeAmount="+$142"
-                            color="#f59e0b"
-                            chartData={[30, 50, 70, 40, 80, 50, 60]}
-                        />
-                        <StatCard
-                            title="Total Profit"
-                            amount="$46,787"
-                            change="10%"
-                            changeAmount="+$142"
-                            color="#22c55e"
-                            chartData={[50, 30, 60, 40, 70, 40, 80]}
-                        />
-                        <StatCard
-                            title="New Orders"
-                            amount="7,428"
-                            change="10%"
-                            changeAmount="+$142"
-                            color="#a855f7"
-                            chartData={[60, 40, 80, 50, 90, 60, 40]}
-                        />
-                        <StatCard
-                            title="Pending Orders"
-                            amount="4,210"
-                            change="10%"
-                            changeAmount="+$142"
-                            color="#06b6d4"
-                            chartData={[40, 70, 40, 60, 30, 80, 50]}
-                        />
-                        <StatCard
-                            title="Cancel Orders"
-                            amount="6,787"
-                            change="10%"
-                            changeAmount="+$142"
-                            color="#f97316"
-                            chartData={[70, 50, 60, 80, 40, 60, 30]}
-                        />
-                    </div>
-
-                    {/* Right Client Growth */}
-                    <div className="lg:col-span-1">
-                        <ClientGrowthCard />
-                    </div>
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                {/* Left 6 Cards */}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:col-span-2 lg:grid-cols-3">
+                    <StatCard
+                        title="Total Income"
+                        amount="$72,428"
+                        change="10%"
+                        changeAmount="+$142"
+                        color="#3b82f6"
+                        chartData={[40, 60, 30, 80, 50, 90, 70]}
+                    />
+                    <StatCard
+                        title="Total Sale"
+                        amount="24,210"
+                        change="10%"
+                        changeAmount="+$142"
+                        color="#f59e0b"
+                        chartData={[30, 50, 70, 40, 80, 50, 60]}
+                    />
+                    <StatCard
+                        title="Total Profit"
+                        amount="$46,787"
+                        change="10%"
+                        changeAmount="+$142"
+                        color="#22c55e"
+                        chartData={[50, 30, 60, 40, 70, 40, 80]}
+                    />
+                    <StatCard
+                        title="New Orders"
+                        amount="7,428"
+                        change="10%"
+                        changeAmount="+$142"
+                        color="#a855f7"
+                        chartData={[60, 40, 80, 50, 90, 60, 40]}
+                    />
+                    <StatCard
+                        title="Pending Orders"
+                        amount="4,210"
+                        change="10%"
+                        changeAmount="+$142"
+                        color="#06b6d4"
+                        chartData={[40, 70, 40, 60, 30, 80, 50]}
+                    />
+                    <StatCard
+                        title="Cancel Orders"
+                        amount="6,787"
+                        change="10%"
+                        changeAmount="+$142"
+                        color="#f97316"
+                        chartData={[70, 50, 60, 80, 40, 60, 30]}
+                    />
                 </div>
-                {/* <StatisticCard /> */}
+
+                {/* Right Client Growth */}
+                <div className="lg:col-span-1">
+                    <ClientGrowthCard />
+                </div>
+            </div>
+            {/* <StatisticCard /> */}
         </AppLayout>
     );
 }

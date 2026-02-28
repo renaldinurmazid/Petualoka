@@ -21,16 +21,36 @@ import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import { Head, useForm } from '@inertiajs/react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
     Camera,
     CheckCircle2,
     CloudUpload,
     Loader2,
+    LocateFixed,
     Phone,
     Store,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import {
+    MapContainer,
+    Marker,
+    TileLayer,
+    useMap,
+    useMapEvents,
+} from 'react-leaflet';
 import { toast } from 'sonner';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl:
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl:
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl:
+        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 interface Vendor {
     id: string;
@@ -44,75 +64,194 @@ interface Vendor {
     country: string;
     logo: string | null;
     banner: string | null;
+    latitude: string | null;
+    longitude: string | null;
     is_verified: boolean;
+}
+
+interface Region {
+    id: string;
+    name: string;
 }
 
 interface Props {
     vendor: Vendor;
 }
 
+const WILAYAH_API = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+
+const DEFAULT_LAT = -6.2;
+const DEFAULT_LNG = 106.8166;
+
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/',
-    },
-    {
-        title: 'Profil Toko',
-        href: '/vendor-profile',
-    },
+    { title: 'Dashboard', href: '/' },
+    { title: 'Profil Toko', href: '/vendor-profile' },
 ];
 
-export default function VendorProfile({ vendor }: Props) {
-    const [logoPreview, setLogoPreview] = useState<string | null>(vendor.logo);
-    const [bannerPreview, setBannerPreview] = useState<string | null>(
-        vendor.banner,
+function LocationMarker({
+    lat,
+    lng,
+    onMove,
+}: {
+    lat: number;
+    lng: number;
+    onMove: (lat: number, lng: number) => void;
+}) {
+    const map = useMap();
+
+    useMapEvents({
+        click(e) {
+            onMove(e.latlng.lat, e.latlng.lng);
+            map.flyTo(e.latlng, map.getZoom());
+        },
+    });
+
+    return (
+        <Marker
+            position={[lat, lng]}
+            draggable
+            eventHandlers={{
+                dragend: (e) => {
+                    const { lat, lng } = e.target.getLatLng();
+                    onMove(lat, lng);
+                },
+            }}
+        />
     );
+}
+
+export default function VendorProfile({ vendor }: Props) {
+    const resolveUrl = (path: string | null): string | null => {
+        if (!path) return null;
+        return path.startsWith('http') ? path : `/storage/${path}`;
+    };
+
+    const [logoPreview, setLogoPreview] = useState<string | null>(
+        resolveUrl(vendor.logo),
+    );
+    const [bannerPreview, setBannerPreview] = useState<string | null>(
+        resolveUrl(vendor.banner),
+    );
+    const [provinces, setProvinces] = useState<Region[]>([]);
+    const [cities, setCities] = useState<Region[]>([]);
+    const [districts, setDistricts] = useState<Region[]>([]);
 
     const logoInputRef = useRef<HTMLInputElement>(null);
     const bannerInputRef = useRef<HTMLInputElement>(null);
+    const mapRef = useRef<L.Map | null>(null);
 
     const { data, setData, post, processing, errors } = useForm({
-        name: vendor.name || '',
-        email: vendor.email || '',
-        phone: vendor.phone || '',
-        address: vendor.address || '',
-        city: vendor.city || '',
-        state: vendor.state || '',
-        sub_district: vendor.sub_district || '',
-        country: vendor.country || 'Indonesia',
+        name: vendor.name ?? '',
+        email: vendor.email ?? '',
+        phone: vendor.phone ?? '',
+        address: vendor.address ?? '',
+        state: vendor.state ?? '',
+        city: vendor.city ?? '',
+        sub_district: vendor.sub_district ?? '',
+        country: vendor.country ?? 'Indonesia',
+        latitude: vendor.latitude ?? String(DEFAULT_LAT),
+        longitude: vendor.longitude ?? String(DEFAULT_LNG),
         logo: null as File | null,
         banner: null as File | null,
     });
 
+    useEffect(() => {
+        fetch(`${WILAYAH_API}/provinces.json`)
+            .then((r) => r.json())
+            .then(setProvinces);
+    }, []);
+
+    useEffect(() => {
+        if (!data.state) {
+            setCities([]);
+            return;
+        }
+        const province = provinces.find((p) => p.name === data.state);
+        if (!province) return;
+        fetch(`${WILAYAH_API}/regencies/${province.id}.json`)
+            .then((r) => r.json())
+            .then(setCities);
+    }, [data.state, provinces]);
+
+    useEffect(() => {
+        if (!data.city) {
+            setDistricts([]);
+            return;
+        }
+        const city = cities.find((c) => c.name === data.city);
+        if (!city) return;
+        fetch(`${WILAYAH_API}/districts/${city.id}.json`)
+            .then((r) => r.json())
+            .then(setDistricts);
+    }, [data.city, cities]);
+
+    const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
     const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setData('logo', file);
-            setLogoPreview(URL.createObjectURL(file));
+        if (!file) return;
+        if (file.size > MAX_FILE_SIZE) {
+            toast.error('Logo terlalu besar, maksimal 2MB');
+            e.target.value = '';
+            return;
         }
+        setData('logo', file);
+        setLogoPreview(URL.createObjectURL(file));
     };
 
     const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setData('banner', file);
-            setBannerPreview(URL.createObjectURL(file));
+        if (!file) return;
+        if (file.size > MAX_FILE_SIZE) {
+            toast.error('Banner terlalu besar, maksimal 2MB');
+            e.target.value = '';
+            return;
         }
+        setData('banner', file);
+        setBannerPreview(URL.createObjectURL(file));
     };
+
+    const setCoords = (lat: number, lng: number) =>
+        setData((d) => ({
+            ...d,
+            latitude: lat.toFixed(6),
+            longitude: lng.toFixed(6),
+        }));
+
+    const handleCurrentLocation = () => {
+        navigator.geolocation?.getCurrentPosition(
+            ({ coords }) => {
+                setCoords(coords.latitude, coords.longitude);
+                mapRef.current?.flyTo([coords.latitude, coords.longitude], 15);
+                toast.success('Lokasi berhasil disesuaikan ke posisi Anda');
+            },
+            () => toast.error('Gagal mendapatkan lokasi'),
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+        );
+    };
+
+    const handleStateChange = (value: string) =>
+        setData((d) => ({ ...d, state: value, city: '', sub_district: '' }));
+
+    const handleCityChange = (value: string) =>
+        setData((d) => ({ ...d, city: value, sub_district: '' }));
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/vendor-profile', {
+            forceFormData: true,
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success('Profil berhasil diperbarui');
+                setData((prev) => ({ ...prev, logo: null, banner: null }));
             },
-            onError: () => {
-                toast.error(
-                    'Gagal memperbarui profil. Silakan periksa kembali inputan Anda.',
-                );
-            },
+            onError: () =>
+                toast.error('Gagal menyimpan, periksa kembali data Anda'),
         });
     };
+
+    const lat = parseFloat(data.latitude) || DEFAULT_LAT;
+    const lng = parseFloat(data.longitude) || DEFAULT_LNG;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -120,7 +259,6 @@ export default function VendorProfile({ vendor }: Props) {
 
             <div className="flex flex-col gap-6 p-4 py-6 md:p-8">
                 <div className="mx-auto w-full max-w-5xl space-y-6">
-                    {/* Header Section */}
                     <div className="flex flex-col gap-1">
                         <h2 className="text-2xl font-bold tracking-tight">
                             Profil Toko
@@ -131,7 +269,7 @@ export default function VendorProfile({ vendor }: Props) {
                     </div>
 
                     <form onSubmit={submit} className="space-y-6">
-                        {/* Banner & Logo Section */}
+                        {/* ── Banner & Logo ───────────────────────────────── */}
                         <Card className="overflow-hidden border-none bg-transparent shadow-none">
                             <div className="relative">
                                 {/* Banner */}
@@ -160,20 +298,20 @@ export default function VendorProfile({ vendor }: Props) {
                                     )}
                                     <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
                                         <div className="flex items-center gap-2 rounded-full border border-white/50 bg-white/20 px-4 py-2 text-sm font-medium text-white backdrop-blur-md">
-                                            <Camera className="size-4" />
-                                            Ganti Banner
+                                            <Camera className="size-4" /> Ganti
+                                            Banner
                                         </div>
                                     </div>
                                     <input
-                                        type="file"
                                         ref={bannerInputRef}
+                                        type="file"
                                         className="hidden"
-                                        accept="image/*"
+                                        accept="image/jpeg,image/png,image/jpg,image/avif"
                                         onChange={handleBannerChange}
                                     />
                                 </div>
 
-                                {/* Logo Overlay */}
+                                {/* Logo */}
                                 <div className="absolute -bottom-12 left-6 md:left-10">
                                     <div
                                         className="group relative size-24 cursor-pointer overflow-hidden rounded-2xl border-4 border-background bg-muted shadow-xl md:size-32"
@@ -185,6 +323,7 @@ export default function VendorProfile({ vendor }: Props) {
                                             <img
                                                 src={logoPreview}
                                                 alt="Logo"
+                                                key={logoPreview}
                                                 className="h-full w-full object-cover"
                                             />
                                         ) : (
@@ -196,21 +335,20 @@ export default function VendorProfile({ vendor }: Props) {
                                             <Camera className="size-6 text-white" />
                                         </div>
                                         <input
-                                            type="file"
                                             ref={logoInputRef}
+                                            type="file"
                                             className="hidden"
-                                            accept="image/*"
+                                            accept="image/jpeg,image/png,image/jpg,image/avif"
                                             onChange={handleLogoChange}
                                         />
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Verification Badge */}
                             <div className="flex justify-end pt-4 pb-2">
                                 {vendor.is_verified ? (
                                     <Badge className="gap-1.5 border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-emerald-600 hover:bg-emerald-500/20">
-                                        <CheckCircle2 className="size-3.5" />
+                                        <CheckCircle2 className="size-3.5" />{' '}
                                         Terverifikasi
                                     </Badge>
                                 ) : (
@@ -218,15 +356,15 @@ export default function VendorProfile({ vendor }: Props) {
                                         variant="secondary"
                                         className="gap-1.5 px-3 py-1"
                                     >
-                                        <Loader2 className="size-3.5 animate-spin" />
+                                        <Loader2 className="size-3.5 animate-spin" />{' '}
                                         Menunggu Verifikasi
                                     </Badge>
                                 )}
                             </div>
                         </Card>
 
+                        {/* ── Info Umum + Lokasi ──────────────────────────── */}
                         <div className="mt-12 grid grid-cols-1 gap-6 pt-6 lg:grid-cols-3">
-                            {/* General Information */}
                             <Card className="lg:col-span-2">
                                 <CardHeader>
                                     <CardTitle>Informasi Umum</CardTitle>
@@ -321,7 +459,6 @@ export default function VendorProfile({ vendor }: Props) {
                                 </CardContent>
                             </Card>
 
-                            {/* Location Details */}
                             <Card className="lg:col-span-1">
                                 <CardHeader>
                                     <CardTitle>Lokasi</CardTitle>
@@ -331,77 +468,188 @@ export default function VendorProfile({ vendor }: Props) {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="state">Provinsi</Label>
-                                        <Input
-                                            id="state"
+                                        <Label>Provinsi</Label>
+                                        <Select
                                             value={data.state}
-                                            onChange={(e) =>
-                                                setData('state', e.target.value)
-                                            }
-                                            placeholder="Provinsi"
-                                            className="bg-muted/30"
-                                        />
+                                            onValueChange={handleStateChange}
+                                        >
+                                            <SelectTrigger className="bg-muted/30">
+                                                <SelectValue placeholder="Pilih Provinsi" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {provinces.map((p) => (
+                                                    <SelectItem
+                                                        key={p.id}
+                                                        value={p.name}
+                                                    >
+                                                        {p.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <InputError message={errors.state} />
                                     </div>
+
                                     <div className="space-y-2">
-                                        <Label htmlFor="city">
-                                            Kota/Kabupaten
-                                        </Label>
-                                        <Input
-                                            id="city"
+                                        <Label>Kota/Kabupaten</Label>
+                                        <Select
                                             value={data.city}
-                                            onChange={(e) =>
-                                                setData('city', e.target.value)
+                                            onValueChange={handleCityChange}
+                                            disabled={
+                                                !data.state ||
+                                                cities.length === 0
                                             }
-                                            placeholder="Kota"
-                                            className="bg-muted/30"
-                                        />
+                                        >
+                                            <SelectTrigger className="bg-muted/30">
+                                                <SelectValue
+                                                    placeholder={
+                                                        data.state
+                                                            ? 'Pilih Kota'
+                                                            : 'Pilih Provinsi dulu'
+                                                    }
+                                                />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {cities.map((c) => (
+                                                    <SelectItem
+                                                        key={c.id}
+                                                        value={c.name}
+                                                    >
+                                                        {c.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <InputError message={errors.city} />
                                     </div>
+
                                     <div className="space-y-2">
-                                        <Label htmlFor="sub_district">
-                                            Kecamatan
-                                        </Label>
-                                        <Input
-                                            id="sub_district"
+                                        <Label>Kecamatan</Label>
+                                        <Select
                                             value={data.sub_district}
-                                            onChange={(e) =>
-                                                setData(
-                                                    'sub_district',
-                                                    e.target.value,
-                                                )
+                                            onValueChange={(v) =>
+                                                setData('sub_district', v)
                                             }
-                                            placeholder="Kecamatan"
-                                            className="bg-muted/30"
-                                        />
+                                            disabled={
+                                                !data.city ||
+                                                districts.length === 0
+                                            }
+                                        >
+                                            <SelectTrigger className="bg-muted/30">
+                                                <SelectValue
+                                                    placeholder={
+                                                        data.city
+                                                            ? 'Pilih Kecamatan'
+                                                            : 'Pilih Kota dulu'
+                                                    }
+                                                />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {districts.map((d) => (
+                                                    <SelectItem
+                                                        key={d.id}
+                                                        value={d.name}
+                                                    >
+                                                        {d.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                         <InputError
                                             message={errors.sub_district}
                                         />
                                     </div>
+
+                                    <p className="mt-1 text-[10px] text-muted-foreground">
+                                        *Gunakan koordinat dari Google Maps
+                                        untuk akurasi lokasi toko.
+                                    </p>
+
                                     <div className="space-y-2">
-                                        <Label htmlFor="country">Negara</Label>
-                                        <Select
+                                        <Label>Negara</Label>
+                                        <Input
                                             value={data.country}
-                                            onValueChange={(v) =>
-                                                setData('country', v)
-                                            }
-                                        >
-                                            <SelectTrigger className="bg-muted/30">
-                                                <SelectValue placeholder="Pilih Negara" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Indonesia">
-                                                    Indonesia
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError message={errors.country} />
+                                            disabled
+                                            className="bg-muted/50"
+                                        />
                                     </div>
                                 </CardContent>
                             </Card>
                         </div>
 
-                        {/* Submit Button */}
+                        {/* ── Map ─────────────────────────────────────────── */}
+                        <div className="space-y-4 rounded-xl border bg-card p-4 shadow-sm lg:p-6">
+                            <div className="space-y-1">
+                                <Label className="text-base font-semibold">
+                                    Lokasi Toko
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                    Geser pin pada peta untuk menentukan
+                                    koordinat yang akurat.
+                                </p>
+                            </div>
+
+                            <div className="h-[300px] w-full overflow-hidden rounded-lg border bg-muted shadow-inner">
+                                <MapContainer
+                                    ref={mapRef}
+                                    center={[lat, lng]}
+                                    zoom={13}
+                                    style={{ height: '100%', width: '100%' }}
+                                    scrollWheelZoom={false}
+                                >
+                                    <TileLayer
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        attribution="&copy; OpenStreetMap contributors"
+                                    />
+                                    <LocationMarker
+                                        lat={lat}
+                                        lng={lng}
+                                        onMove={setCoords}
+                                    />
+                                </MapContainer>
+                            </div>
+
+                            <Button
+                                type="button"
+                                variant="secondary"
+                                className="w-full gap-2 shadow-sm"
+                                onClick={handleCurrentLocation}
+                            >
+                                <LocateFixed className="size-4" />
+                                Gunakan Lokasi Saat Ini
+                            </Button>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium">
+                                        Latitude
+                                    </Label>
+                                    <Input
+                                        value={data.latitude}
+                                        onChange={(e) =>
+                                            setData('latitude', e.target.value)
+                                        }
+                                        placeholder="-6.xxx"
+                                        className="h-9 text-sm"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-xs font-medium">
+                                        Longitude
+                                    </Label>
+                                    <Input
+                                        value={data.longitude}
+                                        onChange={(e) =>
+                                            setData('longitude', e.target.value)
+                                        }
+                                        placeholder="106.xxx"
+                                        className="h-9 text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Submit ───────────────────────────────────────── */}
                         <div className="flex items-center justify-end gap-3 rounded-xl border bg-card p-4 shadow-sm lg:p-6">
                             <Button
                                 type="button"

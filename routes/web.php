@@ -10,7 +10,6 @@ use Inertia\Inertia;
 use Laravel\Fortify\Features;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 
 Route::middleware(['guest'])->group(function () {
     Route::get('/authentication', function (Request $request) {
