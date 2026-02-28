@@ -17,6 +17,7 @@ import {
     ChartArea,
     GalleryVerticalEnd,
     LayoutGrid,
+    List,
     ShoppingBag,
     Tag,
     Wallet,
@@ -28,6 +29,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Kategori Produk',
+        href: '/product-categories',
+        icon: List,
     },
     {
         title: 'Produk',

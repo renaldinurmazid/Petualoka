@@ -19,6 +19,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { Loader2, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import { formatNumber, parseNumber } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -60,6 +61,7 @@ interface Product {
     id: string;
     name: string;
     description: string;
+    category_id: string;
     slug: string;
     price: string;
     stock: string;
@@ -97,6 +99,7 @@ interface ProductFormData {
     _method: string;
     name: string;
     description: string;
+    category_id: string;
     slug: string;
     price: string;
     stock: string;
@@ -110,6 +113,7 @@ interface ProductProp {
     id: string;
     name: string;
     description: string;
+    category_id: string;
     slug: string;
     price: string;
     stock: number;
@@ -128,12 +132,18 @@ interface ProductProp {
     }[];
 }
 
-export default function ProductEdit({ product }: { product: ProductProp }) {
+interface ProductCategory {
+    id: string;
+    name: string;
+}
+
+export default function ProductEdit({ product, categories }: { product: ProductProp, categories: ProductCategory[] }) {
     const { data, setData, post, processing, errors } =
         useForm<ProductFormData>({
             _method: 'PUT',
             name: product.name,
             description: product.description,
+            category_id: product.category_id,
             slug: product.slug,
             price: product.price,
             stock: product.stock.toString(),
@@ -175,18 +185,24 @@ export default function ProductEdit({ product }: { product: ProductProp }) {
     };
 
     useEffect(() => {
-        setData('slug', slugify(data.name));
-    }, [data.name, setData]);
+        const newSlug = slugify(data.name);
+        if (data.slug !== newSlug) {
+            setData('slug', newSlug);
+        }
+    }, [data.name, data.slug, setData]);
 
     useEffect(() => {
         if (data.variants.length > 0) {
             const totalStock = data.variants.reduce(
-                (sum, v) => sum + (parseInt(v.stock) || 0),
+                (sum, v) => sum + (parseInt(v.stock.toString()) || 0),
                 0,
-            );
-            setData('stock', totalStock.toString());
+            ).toString();
+
+            if (data.stock !== totalStock) {
+                setData('stock', totalStock);
+            }
         }
-    }, [data.variants, setData]);
+    }, [data.variants, data.stock, setData]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -401,6 +417,30 @@ export default function ProductEdit({ product }: { product: ProductProp }) {
                                     className="h-11 bg-muted/50"
                                 />
                                 <InputError message={errors.slug} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="category_id">Kategori</Label>
+                                <Select
+                                    value={data.category_id}
+                                    onValueChange={(value) =>
+                                        setData('category_id', value)
+                                    }
+                                >
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue placeholder="Pilih Kategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map((category) => (
+                                            <SelectItem
+                                                key={category.id}
+                                                value={category.id}
+                                            >
+                                                {category.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.category_id} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="price">Harga Dasar (Rp)</Label>

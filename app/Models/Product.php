@@ -10,6 +10,7 @@ class Product extends Model
     use HasUuids;
     protected $fillable = [
         'vendor_id',
+        'category_id',
         'name',
         'description',
         'slug',
@@ -20,6 +21,11 @@ class Product extends Model
     public function vendor()
     {
         return $this->belongsTo(VendorProfile::class, 'vendor_id', 'id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(ProductCategory::class);
     }
 
     public function galleries()

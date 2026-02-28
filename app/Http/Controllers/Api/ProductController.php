@@ -11,7 +11,7 @@ class ProductController extends Controller
     public function recommendedProduct()
     {
         try {
-            $products = Product::select('id', 'name', 'price', 'stock')
+            $products = Product::select('id', 'name', 'price', 'stock', 'slug')
                 ->with([
                     'galleries' => function ($query) {
                         $query->select('id', 'product_id', 'image');
@@ -40,7 +40,7 @@ class ProductController extends Controller
         }
     }
 
-    public function productDetail($id)
+    public function productDetail($slug)
     {
         try {
             $product = Product::select('id', 'name', 'price', 'description', 'stock', 'vendor_id')
@@ -62,9 +62,13 @@ class ProductController extends Controller
                     },
                     'vendor' => function ($query) {
                         $query->select('id', 'name', 'city', 'state', 'logo');
+                    },
+                    'category' => function ($query) {
+                        $query->select('id', 'name', 'slug');
                     }
                 ])
-                ->find($id);
+                ->where('slug', $slug)
+                ->first();
 
             if (!$product) {
                 return response()->json([

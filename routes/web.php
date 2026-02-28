@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VendorProfileController;
 use App\Http\Controllers\VoucherController;
@@ -44,9 +45,7 @@ Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
 
     Route::get('products', [\App\Http\Controllers\ProductController::class, 'index'])->name('product.index');
 
-    Route::get('products/create', function () {
-        return Inertia::render('product/product-create');
-    })->name('product.create');
+    Route::get('products/create', [\App\Http\Controllers\ProductController::class, 'create'])->name('product.create');
 
     Route::post('products', [\App\Http\Controllers\ProductController::class, 'store'])->name('product.store');
     Route::delete('products/{product}', [\App\Http\Controllers\ProductController::class, 'destroy'])->name('product.destroy');
@@ -59,6 +58,8 @@ Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
     Route::get('reports', [ReportController::class, 'index'])->name('report.index');
     Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
     Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
+    
+    Route::resource('product-categories', ProductCategoryController::class);
 });
 
 Route::get('test-connect', function () {

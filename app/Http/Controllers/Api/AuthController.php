@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Exception;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -50,6 +51,7 @@ class AuthController extends Controller
             ], 201);
         } catch (Exception $e) {
             DB::rollBack();
+            Log::error($e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Registration failed.',
@@ -96,7 +98,14 @@ class AuthController extends Controller
                 'message' => 'Login successful',
                 'access_token' => $token,
                 'token_type' => 'Bearer',
-                'user' => $user
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender == 'male' ? 'Laki-laki' : 'Perempuan',
+                    'profile_picture' => $user->profile_picture == null ? 'https://ui-avatars.com/api/?name=' . $user->name : $user->profile_picture,
+                ]
             ]);
         } catch (Exception $e) {
             return response()->json([
@@ -216,7 +225,7 @@ class AuthController extends Controller
         }
     }
 
-    public function verifyOtp(Request $request)
+    public function resetPassword(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
@@ -294,6 +303,9 @@ class AuthController extends Controller
                 'user' => [
                     'name' => $user->name,
                     'email' => $user->email,
+                    'phone' => $user->phone,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender == 'male' ? 'Laki-laki' : 'Perempuan',
                     'profile_picture' => $user->profile_picture == null ? 'https://ui-avatars.com/api/?name=' . $user->name : $user->profile_picture,
                 ]
             ]);
@@ -317,6 +329,45 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to logout.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+    public function updateProfile(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|string|max:255',
+            'phone' => 'sometimes|string|max:20',
+            'birth_date' => 'sometimes|date',
+            'gender' => 'sometimes|in:male,female',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $user = $request->user();
+
+            // Only update fields that are present in the request
+            $user->update($request->only(['name', 'phone', 'birth_date', 'gender']));
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Profile updated successfully',
+                'user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'birth_date' => $user->birth_date,
+                    'gender' => $user->gender == 'male' ? 'Laki-laki' : 'Perempuan',
+                    'profile_picture' => $user->profile_picture == null ? 'https://ui-avatars.com/api/?name=' . $user->name : $user->profile_picture,
+                ]
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to update profile.',
                 'error' => $e->getMessage()
             ], 500);
         }
