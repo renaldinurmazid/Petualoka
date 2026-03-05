@@ -207,7 +207,7 @@ export default function VoucherIndex({ vouchers, filters = {} }: Props) {
                                 Buat Voucher
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
+                        <DialogContent className="sm:max-w-lg md:max-w-2xl">
                             <form onSubmit={onCreateSubmit}>
                                 <DialogHeader>
                                     <DialogTitle>Buat Voucher Baru</DialogTitle>
@@ -641,7 +641,7 @@ export default function VoucherIndex({ vouchers, filters = {} }: Props) {
                     }
                 }}
             >
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="sm:max-w-lg md:max-w-2xl">
                     <form onSubmit={onEditSubmit}>
                         <DialogHeader>
                             <DialogTitle>Edit Voucher</DialogTitle>

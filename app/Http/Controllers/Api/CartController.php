@@ -228,7 +228,7 @@ class CartController extends Controller
 
             foreach ($cartItems as $item) {
                 $price = $item->variant ? $item->variant->price : ($item->product ? $item->product->price : 0);
-                $days = Carbon::parse($item->rental_start_date)->diffInDays(Carbon::parse($item->rental_end_date)) + 1;
+                $days = Carbon::parse($item->rental_start_date)->diffInDays(Carbon::parse($item->rental_end_date));
                 $itemTotal = ($price * $item->quantity * $days);
 
                 $subtotal += $itemTotal;
@@ -373,7 +373,7 @@ class CartController extends Controller
     private function formatCartItem($cartItem)
     {
         $price = $cartItem->variant ? $cartItem->variant->price : ($cartItem->product ? $cartItem->product->price : 0);
-        $days = Carbon::parse($cartItem->rental_start_date)->diffInDays(Carbon::parse($cartItem->rental_end_date)) + 1;
+        $days = Carbon::parse($cartItem->rental_start_date)->diffInDays(Carbon::parse($cartItem->rental_end_date));
 
         $cartItem->rental_duration = $days;
         $cartItem->item_total = $price * $cartItem->quantity * $days;

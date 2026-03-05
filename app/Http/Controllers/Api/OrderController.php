@@ -68,7 +68,7 @@ class OrderController extends Controller
 
             foreach ($cartItems as $item) {
                 $price = $item->variant ? $item->variant->price : ($item->product ? $item->product->price : 0);
-                $days = Carbon::parse($item->rental_start_date)->diffInDays(Carbon::parse($item->rental_end_date)) + 1;
+                $days = Carbon::parse($item->rental_start_date)->diffInDays(Carbon::parse($item->rental_end_date));
                 $itemTotal = ($price * $item->quantity * $days);
 
                 $totalAmount += $itemTotal;
@@ -123,7 +123,7 @@ class OrderController extends Controller
             // 2. Create Order Items
             foreach ($cartItems as $item) {
                 $price = $item->variant ? $item->variant->price : ($item->product ? $item->product->price : 0);
-                $days = Carbon::parse($item->rental_start_date)->diffInDays(Carbon::parse($item->rental_end_date)) + 1;
+                $days = Carbon::parse($item->rental_start_date)->diffInDays(Carbon::parse($item->rental_end_date));
 
                 OrderItem::create([
                     'order_id' => $order->id,

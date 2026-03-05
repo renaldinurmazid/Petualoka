@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductAttribute;
 use App\Models\ProductAttributeOption;
+use App\Models\ProductCategory;
 use App\Models\ProductGallery;
 use App\Models\ProductVariant;
 use App\Models\ProductVariantOption;
@@ -45,12 +46,22 @@ class ProductController extends Controller
         ]);
     }
 
+    public function create(Request $request)
+    {
+        $categories = ProductCategory::select('id', 'name')->get();
+
+        return Inertia::render('product/product-create', [
+            'categories' => $categories,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
             'price' => 'required|numeric|min:0',
+            'category_id' => 'required|exists:product_categories,id',
             'stock' => 'required|integer|min:0',
             'images' => 'required|array|min:1',
             'images.*' => 'image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -80,6 +91,7 @@ class ProductController extends Controller
 
             $product = $vendor->products()->create([
                 'name' => $request->name,
+                'category_id' => $request->category_id,
                 'description' => $request->description,
                 'slug' => Str::slug($request->name) . '-' . Str::random(5),
                 'price' => $request->price,
@@ -144,8 +156,11 @@ class ProductController extends Controller
             abort(403);
         }
 
+        $categories = ProductCategory::select('id', 'name')->get();
+
         return Inertia::render('product/product-edit', [
             'product' => $product->load(['galleries', 'attributes.options', 'variants.attributeOptions']),
+            'categories' => $categories,
         ]);
     }
 
@@ -158,6 +173,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'category_id' => 'required|exists:product_categories,id',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'images' => 'nullable|array',
@@ -184,6 +200,7 @@ class ProductController extends Controller
 
             $product->update([
                 'name' => $request->name,
+                'category_id' => $request->category_id,
                 'description' => $request->description,
                 'price' => $request->price,
                 'stock' => $stock,

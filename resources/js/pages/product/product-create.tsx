@@ -19,6 +19,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { Loader2, Plus, Trash2, UploadCloud, X } from 'lucide-react';
 import { formatNumber, parseNumber } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -47,6 +48,7 @@ interface Variant {
 interface ProductFormData {
     name: string;
     description: string;
+    category_id: string;
     slug: string;
     price: string;
     stock: string;
@@ -55,11 +57,21 @@ interface ProductFormData {
     variants: Variant[];
 }
 
-export default function ProductCreate() {
+interface ProductCategory {
+    id: string;
+    name: string;
+}
+
+interface ProductCreateProps {
+    categories: ProductCategory[];
+}
+
+export default function ProductCreate({ categories }: ProductCreateProps) {
     const { data, setData, post, processing, errors } =
         useForm<ProductFormData>({
             name: '',
             description: '',
+            category_id: '',
             slug: '',
             price: '',
             stock: '',
@@ -82,8 +94,11 @@ export default function ProductCreate() {
     };
 
     useEffect(() => {
-        setData('slug', slugify(data.name));
-    }, [data.name, setData]);
+        const newSlug = slugify(data.name);
+        if (data.slug !== newSlug) {
+            setData('slug', newSlug);
+        }
+    }, [data.name, data.slug, setData]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
@@ -171,12 +186,15 @@ export default function ProductCreate() {
     useEffect(() => {
         if (data.variants.length > 0) {
             const totalStock = data.variants.reduce(
-                (sum, v) => sum + (parseInt(v.stock) || 0),
+                (sum, v) => sum + (parseInt(v.stock.toString()) || 0),
                 0,
-            );
-            setData('stock', totalStock.toString());
+            ).toString();
+
+            if (data.stock !== totalStock) {
+                setData('stock', totalStock);
+            }
         }
-    }, [data.variants, setData]);
+    }, [data.variants, data.stock, setData]);
 
     const updateVariant = (
         index: number,
@@ -289,6 +307,30 @@ export default function ProductCreate() {
                                     className="h-11 bg-muted/50"
                                 />
                                 <InputError message={errors.slug} />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <Label htmlFor="category_id">Kategori Produk</Label>
+                                <Select
+                                    value={data.category_id}
+                                    onValueChange={(value) =>
+                                        setData('category_id', value)
+                                    }
+                                >
+                                    <SelectTrigger className="h-11">
+                                        <SelectValue placeholder="Pilih Kategori" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map((category) => (
+                                            <SelectItem
+                                                key={category.id}
+                                                value={category.id}
+                                            >
+                                                {category.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={errors.category_id} />
                             </div>
 
                             <div className="flex flex-col gap-2">
