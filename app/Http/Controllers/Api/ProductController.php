@@ -43,7 +43,7 @@ class ProductController extends Controller
     public function productDetail($slug)
     {
         try {
-            $product = Product::select('id', 'name', 'price', 'description', 'stock', 'vendor_id')
+            $product = Product::select('id', 'name', 'price', 'description', 'stock', 'vendor_id','slug')
                 ->with([
                     'galleries' => function ($query) {
                         $query->select('id', 'product_id', 'image');
@@ -63,9 +63,6 @@ class ProductController extends Controller
                     'vendor' => function ($query) {
                         $query->select('id', 'name', 'city', 'state', 'logo');
                     },
-                    'category' => function ($query) {
-                        $query->select('id', 'name', 'slug');
-                    }
                 ])
                 ->where('slug', $slug)
                 ->first();
@@ -93,6 +90,74 @@ class ProductController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Gagal mengambil data produk',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function productReviews($slug)
+    {
+        try {
+            $product = Product::where('slug', $slug)->first();
+
+            if (!$product) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Produk tidak ditemukan',
+                ], 404);
+            }
+
+            $totalReviews = $product->reviews()->count();
+            $averageRating = $product->reviews()->avg('rating') ?? 0;
+
+            // Rating distribution
+            $distribution = [
+                5 => $product->reviews()->where('rating', 5)->count(),
+                4 => $product->reviews()->where('rating', 4)->count(),
+                3 => $product->reviews()->where('rating', 3)->count(),
+                2 => $product->reviews()->where('rating', 2)->count(),
+                1 => $product->reviews()->where('rating', 1)->count(),
+            ];
+
+            // Satisfaction percentage (4 and 5 stars)
+            $satisfiedCount = $distribution[5] + $distribution[4];
+            $satisfactionPercentage = $totalReviews > 0 ? round(($satisfiedCount / $totalReviews) * 100) : 0;
+
+            $reviews = $product->reviews()
+                ->with(['user:id,name'])
+                ->latest()
+                ->paginate(10);
+
+            // Transform reviews to include variant info from OrderItem
+            $reviews->getCollection()->transform(function ($review) use ($product) {
+                $orderItem = \App\Models\OrderItem::where('order_id', $review->order_id)
+                    ->where('product_id', $product->id)
+                    ->first();
+
+                return [
+                    'id' => $review->id,
+                    'rating' => $review->rating,
+                    'comment' => $review->comment,
+                    'created_at' => $review->created_at->diffForHumans(),
+                    'user_name' => $review->user->name,
+                    'variant_name' => $orderItem->variant_name ?? null,
+                ];
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil mengambil ulasan produk',
+                'summary' => [
+                    'average_rating' => round($averageRating, 1),
+                    'total_reviews' => $totalReviews,
+                    'satisfaction_percentage' => $satisfactionPercentage,
+                    'rating_distribution' => $distribution,
+                ],
+                'data' => $reviews,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil ulasan produk',
                 'error' => $e->getMessage(),
             ], 500);
         }

@@ -37,8 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/banners', [BannerController::class, 'index']);
 Route::get('/products/recommended', [ProductController::class, 'recommendedProduct']);
 Route::get('/products/{slug}', [ProductController::class, 'productDetail']);
+Route::get('/products/{slug}/reviews', [ProductController::class, 'productReviews']);
 Route::get('/vouchers', [VoucherController::class, 'index']);
 Route::get('/vouchers/check', [VoucherController::class, 'checkVoucher']);
 Route::get('/payment-methods', [PaymentMethodeController::class, 'index']);
 Route::get('/product-categories', [ProductCategoryController::class, 'index']);
-Route::post('/midtrans-callback', [\App\Http\Controllers\Api\OrderController::class, 'callback']);
+Route::post('/midtrans/callback', [\App\Http\Controllers\Api\OrderController::class, 'callback']);

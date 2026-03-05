@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\VendorProfileController;
@@ -58,17 +59,18 @@ Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
     Route::get('reports', [ReportController::class, 'index'])->name('report.index');
     Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
     Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
-    
+
     Route::resource('product-categories', ProductCategoryController::class);
+    Route::resource('payment-methodes', PaymentMethodController::class);
 });
 
 Route::get('test-connect', function () {
     try {
         Mail::raw('Halo, ini adalah pesan test koneksi dari Laravel!', function ($message) {
             $message->to('renaldinurmazid@gmail.com')
-                    ->subject('Test Koneksi SMTP');
+                ->subject('Test Koneksi SMTP');
         });
-        
+
         return "✅ Koneksi Berhasil! Email telah dikirim.";
     } catch (\Exception $e) {
         return "❌ Koneksi Gagal! Pesan Error: " . $e->getMessage();

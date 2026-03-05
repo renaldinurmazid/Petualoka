@@ -15,6 +15,7 @@ import { Link } from '@inertiajs/react';
 import {
     Box,
     ChartArea,
+    CreditCard,
     GalleryVerticalEnd,
     LayoutGrid,
     List,
@@ -34,6 +35,11 @@ const mainNavItems: NavItem[] = [
         title: 'Kategori Produk',
         href: '/product-categories',
         icon: List,
+    },
+    {
+        title: 'Metode Pembayaran',
+        href: '/payment-methodes',
+        icon: CreditCard,
     },
     {
         title: 'Produk',

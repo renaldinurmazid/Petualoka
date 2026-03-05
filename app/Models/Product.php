@@ -18,6 +18,32 @@ class Product extends Model
         'stock',
     ];
 
+    protected $appends = [
+        'average_rating',
+        'review_count',
+        'order_count'
+    ];
+
+    public function getAverageRatingAttribute()
+    {
+        return round($this->reviews()->avg('rating'), 1) ?? 0;
+    }
+
+    public function getReviewCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
+
+    public function getOrderCountAttribute()
+    {
+        return $this->orderItems()->count();
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
     public function vendor()
     {
         return $this->belongsTo(VendorProfile::class, 'vendor_id', 'id');
@@ -46,5 +72,10 @@ class Product extends Model
     public function carts()
     {
         return $this->hasMany(Cart::class);
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(ProductReview::class);
     }
 }
