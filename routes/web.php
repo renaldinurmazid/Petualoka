@@ -2,14 +2,17 @@
 
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\VendorProfileController;
 use App\Http\Controllers\VoucherController;
 use App\Http\Controllers\WalletController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
+use App\Http\Controllers\DashboardController;
 
 use Illuminate\Http\Request;
 
@@ -30,37 +33,37 @@ Route::middleware(['guest'])->group(function () {
 Route::middleware(['auth'])->get('/', fn() => redirect()->route('dashboard'));
 
 Route::middleware(['auth', 'verified', 'check.vendor'])->group(function () {
+    // Shared Routes (Dashboard & Profile Toko)
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('vendor-profile', [VendorProfileController::class, 'index'])->name('vendor-profile.index');
+    Route::post('vendor-profile', [VendorProfileController::class, 'update'])->name('vendor-profile.update');
+
+    // KHUSUS ADMIN (Sistem Management)
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('product-categories', ProductCategoryController::class);
+        Route::resource('payment-methodes', PaymentMethodController::class);
+        Route::resource('roles', RoleController::class);
+        Route::resource('permissions', PermissionController::class)
+            ->except(['create', 'show', 'edit'])
+            ->parameters(['permissions' => 'permission:uuid']);
+    });
+
+    // KHUSUS MITRA / ADMIN (Operasional Toko)
+    Route::middleware(['role:superadmin|mitra'])->group(function () {
+        Route::resource('products', \App\Http\Controllers\ProductController::class)->names('product');
+        Route::resource('vouchers', VoucherController::class);
+        Route::resource('orders', OrderController::class);
+        Route::patch('order/{order}/status', [OrderController::class, 'updateStatus'])->name('order.update-status');
+        Route::get('reports', [ReportController::class, 'index'])->name('report.index');
+        Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
+        Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
+    });
+
+    // Setup Mitra (Hanya untuk yang belum setup)
     Route::get('/form-mitra', function () {
         return Inertia::render('auth/vendor-setup');
     })->name('vendor.setup');
-
-    Route::get('vendor-profile', [VendorProfileController::class, 'index'])->name('vendor-profile.index');
-    Route::post('vendor-profile', [VendorProfileController::class, 'update'])->name('vendor-profile.update');
     Route::post('/form-mitra', [VendorProfileController::class, 'store'])->name('vendor.store');
-
-
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-
-    Route::get('products', [\App\Http\Controllers\ProductController::class, 'index'])->name('product.index');
-
-    Route::get('products/create', [\App\Http\Controllers\ProductController::class, 'create'])->name('product.create');
-
-    Route::post('products', [\App\Http\Controllers\ProductController::class, 'store'])->name('product.store');
-    Route::delete('products/{product}', [\App\Http\Controllers\ProductController::class, 'destroy'])->name('product.destroy');
-    Route::get('products/{product}/edit', [\App\Http\Controllers\ProductController::class, 'edit'])->name('product.edit');
-    Route::put('products/{product}', [\App\Http\Controllers\ProductController::class, 'update'])->name('product.update');
-
-    Route::resource('vouchers', VoucherController::class);
-    Route::resource('orders', OrderController::class);
-    Route::patch('order/{order}/status', [OrderController::class, 'updateStatus'])->name('order.update-status');
-    Route::get('reports', [ReportController::class, 'index'])->name('report.index');
-    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.pdf');
-    Route::get('wallets', [WalletController::class, 'index'])->name('wallet.index');
-
-    Route::resource('product-categories', ProductCategoryController::class);
-    Route::resource('payment-methodes', PaymentMethodController::class);
 });
 
 Route::get('test-connect', function () {
