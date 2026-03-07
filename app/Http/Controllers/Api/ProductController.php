@@ -61,7 +61,7 @@ class ProductController extends Controller
                         $query->select('product_attribute_options.id', 'product_attribute_id', 'value');
                     },
                     'vendor' => function ($query) {
-                        $query->select('id', 'name', 'city', 'state', 'logo');
+                        $query->select('id', 'name', 'city', 'state', 'logo','slug');
                     },
                 ])
                 ->where('slug', $slug)
