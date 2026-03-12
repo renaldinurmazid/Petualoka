@@ -43,7 +43,7 @@ class ProductController extends Controller
     public function productDetail($slug)
     {
         try {
-            $product = Product::select('id', 'name', 'price', 'description', 'stock', 'vendor_id','slug')
+            $product = Product::select('id', 'name', 'price', 'description', 'stock', 'vendor_id', 'category_id', 'slug')
                 ->with([
                     'galleries' => function ($query) {
                         $query->select('id', 'product_id', 'image');
@@ -62,6 +62,9 @@ class ProductController extends Controller
                     },
                     'vendor' => function ($query) {
                         $query->select('id', 'name', 'city', 'state', 'logo','slug');
+                    },
+                    'category' => function ($query) {
+                        $query->select('id', 'name', 'slug');
                     },
                 ])
                 ->where('slug', $slug)
@@ -94,6 +97,130 @@ class ProductController extends Controller
             ], 500);
         }
     }
+
+    public function productsByCategory(Request $request, $categorySlug)
+    {
+        try {
+            $category = \App\Models\ProductCategory::where('slug', $categorySlug)->first();
+
+            if (!$category) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Kategori tidak ditemukan',
+                ], 404);
+            }
+
+            $query = Product::select('id', 'name', 'price', 'stock', 'slug', 'category_id')
+                ->where('category_id', $category->id)
+                ->with([
+                    'galleries' => function ($q) {
+                        $q->select('id', 'product_id', 'image')->limit(1);
+                    }
+                ]);
+
+            // Sort
+            switch ($request->input('sort', 'popular')) {
+                case 'price_asc':
+                    $query->orderBy('price', 'asc');
+                    break;
+                case 'price_desc':
+                    $query->orderBy('price', 'desc');
+                    break;
+                case 'rating':
+                    $query->withAvg('reviews', 'rating')->orderByDesc('reviews_avg_rating');
+                    break;
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                default: // popular
+                    $query->withCount('orderItems')->orderByDesc('order_items_count');
+                    break;
+            }
+
+            $products = $query->paginate($request->input('per_page', 12));
+
+            $products->getCollection()->transform(function ($product) {
+                $product->price = price_formatter($product->price);
+                $product->thumbnail = $product->galleries->first()->image ?? null;
+                $product->average_rating = round($product->reviews()->avg('rating') ?? 0, 1);
+                $product->review_count = $product->reviews()->count();
+                unset($product->galleries);
+                return $product;
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil mengambil produk kategori',
+                'category' => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ],
+                'data' => $products,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil produk kategori',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function allProducts(Request $request)
+    {
+        try {
+            $query = Product::select('id', 'name', 'price', 'stock', 'slug', 'category_id')
+                ->with([
+                    'galleries' => function ($q) {
+                        $q->select('id', 'product_id', 'image')->limit(1);
+                    }
+                ]);
+
+            // Sort
+            switch ($request->input('sort', 'newest')) {
+                case 'price_asc':
+                    $query->orderBy('price', 'asc');
+                    break;
+                case 'price_desc':
+                    $query->orderBy('price', 'desc');
+                    break;
+                case 'rating':
+                    $query->withAvg('reviews', 'rating')->orderByDesc('reviews_avg_rating');
+                    break;
+                case 'popular':
+                    $query->withCount('orderItems')->orderByDesc('order_items_count');
+                    break;
+                default: // newest
+                    $query->orderBy('created_at', 'desc');
+                    break;
+            }
+
+            $products = $query->paginate($request->input('per_page', 12));
+
+            $products->getCollection()->transform(function ($product) {
+                $product->price = price_formatter($product->price);
+                $product->thumbnail = $product->galleries->first()->image ?? null;
+                $product->average_rating = round($product->reviews()->avg('rating') ?? 0, 1);
+                $product->review_count = $product->reviews()->count();
+                unset($product->galleries);
+                return $product;
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil mengambil semua produk',
+                'data' => $products,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil semua produk',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function productReviews($slug)
     {
         try {
@@ -157,7 +284,7 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil ulasan produk',
+                'message' => 'Gagal mengambil data produk',
                 'error' => $e->getMessage(),
             ], 500);
         }
