@@ -36,9 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::get('/banners', [BannerController::class, 'index']);
 Route::get('/products/recommended', [ProductController::class, 'recommendedProduct']);
-Route::get('/products/all', [ProductController::class, 'allProducts']);
 
-// ⚠️ Harus sebelum /products/{slug} biar ga bentrok
+Route::get('/products', [ProductController::class, 'allProducts']);
 Route::get('/products/category/{categorySlug}', [ProductController::class, 'productsByCategory']);
 
 Route::get('/products/{slug}', [ProductController::class, 'productDetail']);

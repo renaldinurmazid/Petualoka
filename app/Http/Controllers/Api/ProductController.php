@@ -61,7 +61,7 @@ class ProductController extends Controller
                         $query->select('product_attribute_options.id', 'product_attribute_id', 'value');
                     },
                     'vendor' => function ($query) {
-                        $query->select('id', 'name', 'city', 'state', 'logo','slug');
+                        $query->select('id', 'name', 'city', 'state', 'logo', 'slug');
                     },
                     'category' => function ($query) {
                         $query->select('id', 'name', 'slug');
@@ -110,40 +110,19 @@ class ProductController extends Controller
                 ], 404);
             }
 
-            $query = Product::select('id', 'name', 'price', 'stock', 'slug', 'category_id')
+            $data = Product::select('id', 'name', 'price', 'stock', 'slug')
                 ->where('category_id', $category->id)
                 ->with([
-                    'galleries' => function ($q) {
-                        $q->select('id', 'product_id', 'image')->limit(1);
+                    'galleries' => function ($query) {
+                        $query->select('id', 'product_id', 'image');
                     }
-                ]);
+                ])
+                ->latest()
+                ->paginate(10);
 
-            // Sort
-            switch ($request->input('sort', 'popular')) {
-                case 'price_asc':
-                    $query->orderBy('price', 'asc');
-                    break;
-                case 'price_desc':
-                    $query->orderBy('price', 'desc');
-                    break;
-                case 'rating':
-                    $query->withAvg('reviews', 'rating')->orderByDesc('reviews_avg_rating');
-                    break;
-                case 'newest':
-                    $query->orderBy('created_at', 'desc');
-                    break;
-                default: // popular
-                    $query->withCount('orderItems')->orderByDesc('order_items_count');
-                    break;
-            }
-
-            $products = $query->paginate($request->input('per_page', 12));
-
-            $products->getCollection()->transform(function ($product) {
+            $data->getCollection()->transform(function ($product) {
                 $product->price = price_formatter($product->price);
-                $product->thumbnail = $product->galleries->first()->image ?? null;
-                $product->average_rating = round($product->reviews()->avg('rating') ?? 0, 1);
-                $product->review_count = $product->reviews()->count();
+                $product->image = $product->galleries->first()->image ?? null;
                 unset($product->galleries);
                 return $product;
             });
@@ -151,12 +130,7 @@ class ProductController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Berhasil mengambil produk kategori',
-                'category' => [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                    'slug' => $category->slug,
-                ],
-                'data' => $products,
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -170,47 +144,66 @@ class ProductController extends Controller
     public function allProducts(Request $request)
     {
         try {
-            $query = Product::select('id', 'name', 'price', 'stock', 'slug', 'category_id')
+            $query = Product::select('id', 'name', 'price', 'stock', 'slug')
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
                 ->with([
                     'galleries' => function ($q) {
-                        $q->select('id', 'product_id', 'image')->limit(1);
+                        $q->select('id', 'product_id', 'image');
                     }
                 ]);
 
-            // Sort
-            switch ($request->input('sort', 'newest')) {
-                case 'price_asc':
-                    $query->orderBy('price', 'asc');
-                    break;
-                case 'price_desc':
-                    $query->orderBy('price', 'desc');
-                    break;
-                case 'rating':
-                    $query->withAvg('reviews', 'rating')->orderByDesc('reviews_avg_rating');
-                    break;
-                case 'popular':
-                    $query->withCount('orderItems')->orderByDesc('order_items_count');
-                    break;
-                default: // newest
-                    $query->orderBy('created_at', 'desc');
-                    break;
+            if ($request->filled('search')) {
+                $query->where('name', 'like', "%{$request->search}%");
             }
 
-            $products = $query->paginate($request->input('per_page', 12));
+            if ($request->filled('min_price')) {
+                $query->where('price', '>=', $request->min_price);
+            }
 
-            $products->getCollection()->transform(function ($product) {
+            if ($request->filled('max_price')) {
+                $query->where('price', '<=', $request->max_price);
+            }
+
+            if ($request->filled('rating')) {
+                $query->having('reviews_avg_rating', '>=', $request->rating);
+            }
+            if ($request->filled('sort')) {
+                switch ($request->sort) {
+                    case 'terpopuler':
+                        $query->orderByDesc('reviews_count')->orderByDesc('reviews_avg_rating');
+                        break;
+                    case 'termurah':
+                        $query->orderBy('price', 'asc');
+                        break;
+                    case 'termahal':
+                        $query->orderBy('price', 'desc');
+                        break;
+                    case 'relevansi':
+                    default:
+                        $query->latest();
+                        break;
+                }
+            } else {
+                $query->latest();
+            }
+
+            $data = $query->paginate(10);
+
+            $data->getCollection()->transform(function ($product) {
                 $product->price = price_formatter($product->price);
-                $product->thumbnail = $product->galleries->first()->image ?? null;
-                $product->average_rating = round($product->reviews()->avg('rating') ?? 0, 1);
-                $product->review_count = $product->reviews()->count();
+                $product->image = $product->galleries->first()->image ?? null;
+                $product->rating = round($product->reviews_avg_rating ?? 0, 1);
+                
                 unset($product->galleries);
+                unset($product->reviews_avg_rating);
                 return $product;
             });
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Berhasil mengambil semua produk',
-                'data' => $products,
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
             return response()->json([
