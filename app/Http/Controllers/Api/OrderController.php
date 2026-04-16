@@ -39,6 +39,8 @@ class OrderController extends Controller
             'cart_ids.*' => 'exists:carts,id',
             'payment_methode_id' => 'required|exists:payment_methodes,id',
             'delivery_methode' => 'required|string',
+            'shipping_price' => 'required|numeric',
+            'user_address_id' => 'required|exists:user_addresses,id',
             'voucher_id' => 'nullable|exists:vouchers,id',
             'notes' => 'nullable|string',
         ]);
@@ -49,6 +51,9 @@ class OrderController extends Controller
 
         $user = Auth::user();
         $paymentMethode = PaymentMethode::findOrFail($request->payment_methode_id);
+        $address = \App\Models\UserAddress::where('user_id', $user->id)
+            ->where('id', $request->user_address_id)
+            ->firstOrFail();
 
         DB::beginTransaction();
 
@@ -102,16 +107,20 @@ class OrderController extends Controller
             }
 
             $serviceFee = 2000;
-            $grandTotal = max(0, ($totalAmount - $discountAmount)) + $serviceFee;
+            $shippingPrice = $request->shipping_price;
+            $grandTotal = max(0, ($totalAmount - $discountAmount)) + $serviceFee + $shippingPrice;
             $orderNumber = 'ORD-' . strtoupper(Str::random(10));
 
             // 1. Create Order
             $order = Order::create([
                 'user_id' => $user->id,
                 'payment_methode_id' => $paymentMethode->id,
+                'user_address_id' => $address->id,
+                'shipping_address' => $address->toArray(),
                 'order_number' => $orderNumber,
                 'total_amount' => $totalAmount,
                 'service_fee' => $serviceFee,
+                'shipping_price' => $shippingPrice,
                 'voucher_id' => $voucherId,
                 'discount_amount' => $discountAmount,
                 'grand_total' => $grandTotal,
@@ -362,5 +371,29 @@ class OrderController extends Controller
             'status' => 'success',
             'message' => 'Callback processed successfully'
         ]);
+    }
+
+    public function shippingMethode(){
+        try{
+            $data = [
+                [
+                    'code' => 'self_pickup',
+                    'name' => 'Self Pickup',
+                    'description' => 'Ambil Sendiri',
+                    'price_formatted' => 'Rp0',
+                    'price' => 0,
+                ],
+            ];
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data
+            ]);
+        }catch(Exception $e){
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data metode pengiriman: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 }

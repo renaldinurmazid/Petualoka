@@ -24,10 +24,13 @@ class Order extends Model
         'transaction_id',
         'payment_status',
         'payment_info',
+        'user_address_id',
+        'shipping_address',
         'paid_at',
         'completed_at',
         'expired_at',
         'delivery_methode',
+        'shipping_price',
     ];
 
     protected $casts = [
@@ -39,6 +42,8 @@ class Order extends Model
         'paid_at' => 'datetime',
         'completed_at' => 'datetime',
         'expired_at' => 'datetime',
+        'shipping_address' => 'array',
+        'shipping_price' => 'decimal:2',
     ];
 
     public function user()
@@ -49,6 +54,11 @@ class Order extends Model
     public function paymentMethode()
     {
         return $this->belongsTo(PaymentMethode::class);
+    }
+
+    public function address()
+    {
+        return $this->belongsTo(UserAddress::class, 'user_address_id');
     }
 
     public function voucher()
