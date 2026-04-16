@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\PaymentMethodeController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductCategoryController;
 use App\Http\Controllers\Api\VoucherController;
+use App\Http\Controllers\Api\UserAddressController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -32,7 +33,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/profile/update', [AuthController::class, 'updateProfile']);
     Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::get('/addresses', [UserAddressController::class, 'index']);
+    Route::post('/addresses', [UserAddressController::class, 'store']);
+    Route::get('/addresses/{id}', [UserAddressController::class, 'show']);
+    Route::put('/addresses/{id}', [UserAddressController::class, 'update']);
+    Route::delete('/addresses/{id}', [UserAddressController::class, 'destroy']);
+    Route::patch('/addresses/{id}/set-default', [UserAddressController::class, 'setDefault']);
 });
+
+Route::get('/shipping-methods', [\App\Http\Controllers\Api\OrderController::class, 'shippingMethode']);
 
 Route::get('/banners', [BannerController::class, 'index']);
 Route::get('/products/recommended', [ProductController::class, 'recommendedProduct']);

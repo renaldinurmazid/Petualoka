@@ -49,7 +49,7 @@ class CartController extends Controller
             $user = Auth::user();
             $cartItems = Cart::with([
                 'product' => function ($query) {
-                    $query->select('id', 'name', 'price', 'vendor_id');
+                    $query->select('id', 'name', 'price', 'vendor_id', 'slug');
                 },
                 'product.galleries',
                 'product.vendor' => function ($query) {
